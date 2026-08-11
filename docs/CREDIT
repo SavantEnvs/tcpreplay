@@ -210,3 +210,7 @@ jiezhuzzz <GitHub @jiezhuzzz>
 
 360AlphaLab <GitHub @360AlphaLab>
     - common: reported buffer overflow in the KHIAL sendpacket() path (GHSA-pjh6-6hrw-vcwr)
+
+Gabriel Ganne <GitHub @GabrielGanne>
+    - minor compilation fixes and warning cleanups found while building with meson
+      warning_level=3 (#1116)
