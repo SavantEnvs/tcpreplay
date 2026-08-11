@@ -1,4 +1,4 @@
-07/28/2026 Version 4.6.1-beta1
+08/11/2026 Version 4.6.1
     - common: fix two undefined-behaviour defects found by UBSan - misaligned MPLS label
       parsing, negative left shift in fragroute's ip_ttl (#1100)
     - ci: run UBSan alongside ASan; mark wire-format header structs packed to fix
