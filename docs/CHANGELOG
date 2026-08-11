@@ -11,6 +11,10 @@
     - test: add a dependency-free unit test suite under test/unit, run by `make check`
       and `ctest` (#1079, GHSA-jj65-mrgg-f5fx)
     - build: minor compilation fixes and warning cleanups (#1116)
+    - common: fix out-of-bounds write from an undersized struct bpf_program stub on
+      HAVE_LIBBPF builds, hit by tcpprep/tcpbridge's -f option (#1121)
+    - fragroute: fix uninitialized-stack read in mod_open()'s debug logging, an
+      intermittent crash under --dbug (#1124)
 
 07/27/2026 Version 4.6.0
     - xdp: revert the top-speed default for --xdp-batch-size back to 1 (#1084) - now that sends
