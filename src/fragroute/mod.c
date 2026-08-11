@@ -109,7 +109,7 @@ mod_open(const char *script, char *errbuf)
             break;
         }
 
-        dbgx(1, "argc = %d, %s, %s, %s", argc, argv[0], argv[1], argv[2]);
+        dbgx(1, "argc = %d, %s, %s, %s", argc, argv[0], argc > 1 ? argv[1] : "", argc > 2 ? argv[2] : "");
         /* check first keyword against modules */
         for (m = mods; *m != NULL; m++) {
             if (strcasecmp((*m)->name, argv[0]) == 0) {
