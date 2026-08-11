@@ -58,8 +58,15 @@
 #include <bpf/libbpf.h>
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H 1
 
+/*
+ * libpcap's real struct bpf_program, reproduced verbatim: PCAP_DONT_INCLUDE_PCAP_BPF_H
+ * above hides it to avoid a struct bpf_insn clash with libbpf's headers, but
+ * tcpr_bpf_t embeds this by value, and pcap_compile()/pcap_setfilter() write
+ * through it at libpcap's real size - a zero-byte stub here was an OOB write (#1121).
+ */
 struct bpf_program {
-char dummy[0];
+    unsigned int bf_len;
+    struct bpf_insn *bf_insns;
 };
 
 #endif
