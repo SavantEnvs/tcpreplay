@@ -39,10 +39,7 @@ The backend is just a flag on an otherwise normal replay. Combine it with
     default queue doesn't exist — tcpreplay warns and falls back to the default
     injection method rather than failing the run. Pass `--xdp-no-fallback` to
     turn that into a hard error, which you want when benchmarking: a silent
-    change of injector changes what's being measured. `--xdp-batch-size`
-    exists for very high-speed links (100GigE+, especially with small packets)
-    but shouldn't normally need changing — sends already pipeline across the
-    UMEM at the default batch of 1.
+    change of injector changes what's being measured.
 
 === "io_uring"
 
