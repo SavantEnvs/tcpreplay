@@ -41,6 +41,16 @@ typedef uint16_t __sum16;
 typedef uint32_t __wsum;
 
 /*
+ * csum_replace*()'s sum parameter is routinely &pkt_hdr->field from one of
+ * the packed wire structs (#1104). __sum16 itself can't carry the relaxed
+ * alignment - system headers (linux/types.h) may already have their own
+ * unaligned __sum16 typedef, and GCC keeps the first declaration's alignment
+ * on redeclaration - so use a distinctly-named type for the pointer instead
+ * (#1122).
+ */
+typedef uint16_t tcpr_unaligned_sum16_t __attribute__((aligned(1)));
+
+/*
  * Fold a partial checksum
  */
 static inline __sum16
@@ -89,7 +99,7 @@ csum_unfold(__sum16 n)
 
 __wsum csum_partial(const void *buff, int len, __wsum wsum);
 static inline void
-csum_replace16(__sum16 *sum, const __be32 *from, const __be32 *to)
+csum_replace16(tcpr_unaligned_sum16_t *sum, const __be32 *from, const __be32 *to)
 {
     __be32 diff[] = {
             ~from[0],
@@ -106,13 +116,13 @@ csum_replace16(__sum16 *sum, const __be32 *from, const __be32 *to)
 }
 
 static inline void
-csum_replace4(__sum16 *sum, __be32 from, __be32 to)
+csum_replace4(tcpr_unaligned_sum16_t *sum, __be32 from, __be32 to)
 {
     *sum = csum_fold(csum_add(csum_sub(~csum_unfold(*sum), from), to));
 }
 
 static inline void
-csum_replace2(__sum16 *sum, __be16 from, __be16 to)
+csum_replace2(tcpr_unaligned_sum16_t *sum, __be16 from, __be16 to)
 {
     *sum = ~csum16_add(csum16_sub(~(*sum), from), to);
 }

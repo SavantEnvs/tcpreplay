@@ -356,10 +356,17 @@ randomize_ipv4_addr(tcpedit_t *tcpedit, uint32_t ip)
     return res_ip;
 }
 
+/*
+ * aligned(1): addr is a field inside a packed wire struct (#1104) - relaxing
+ * this type's alignment carries that through the pointer instead of losing
+ * it at the call boundary (#1122).
+ */
+typedef uint32_t unaligned_uint32_t __attribute__((aligned(1)));
+
 static void
 randomize_ipv6_addr(tcpedit_t *tcpedit, struct tcpr_in6_addr *addr)
 {
-    uint32_t *p;
+    unaligned_uint32_t *p;
     int i;
     bool was_multicast;
 
