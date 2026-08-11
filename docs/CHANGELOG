@@ -15,6 +15,8 @@
       HAVE_LIBBPF builds, hit by tcpprep/tcpbridge's -f option (#1121)
     - fragroute: fix uninitialized-stack read in mod_open()'s debug logging, an
       intermittent crash under --dbug (#1124)
+    - tcpedit: fix 17 -Waddress-of-packed-member warnings left by #1104's packed-struct
+      fix (#1122)
 
 07/27/2026 Version 4.6.0
     - xdp: revert the top-speed default for --xdp-batch-size back to 1 (#1084) - now that sends
