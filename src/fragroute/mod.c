@@ -170,14 +170,41 @@ mod_open(const char *script, char *errbuf)
     return (ret);
 }
 
+/*
+ * Modules like ip_chaff and tcp_chaff duplicate every packet currently in
+ * the queue each time they're applied, so a rules file stacking enough of
+ * those directives doubles the packet count - and total work - on each one:
+ * 2^n growth in the number of such directives.  A rules file well within
+ * any legitimate use turns one input packet into gigabytes of output and
+ * runs for minutes.  Real fragroute usage - fragmenting/duplicating one
+ * packet through a short, hand-written rules file - never approaches this
+ * many fragments, so stop applying further rules once the queue crosses it
+ * rather than let a pathological rules file run unbounded.
+ */
+#define MOD_APPLY_MAX_PACKETS 8192
+
 void
 mod_apply(struct pktq *pktq)
 {
     struct rule *rule;
+    struct pkt *pkt;
+    unsigned int count;
 
     TAILQ_FOREACH(rule, &rules, next)
     {
         rule->mod->apply(rule->data, pktq);
+
+        count = 0;
+        TAILQ_FOREACH(pkt, pktq, pkt_next)
+        {
+            count++;
+        }
+        if (count > MOD_APPLY_MAX_PACKETS) {
+            warnx("rule chain produced %u packets, stopping further rule application (limit %u)",
+                  count,
+                  MOD_APPLY_MAX_PACKETS);
+            break;
+        }
     }
 }
 
