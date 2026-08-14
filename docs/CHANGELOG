@@ -1,4 +1,6 @@
 08/11/2026 Version 4.6.1
+    - fragroute: bound mod_apply() against exponential packet-count growth from
+      duplicating rules like "ip_chaff"/"tcp_chaff" (OSS-Fuzz 546146015)
     - fragroute: fix a rand_t leak in ip_frag_open()/tcp_seg_open() when a rules
       file repeats "ip_frag" or "tcp_seg" (OSS-Fuzz 545925322)
     - fragroute: wire up mod_close(), which was implemented but never called -
