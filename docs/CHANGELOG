@@ -1,11 +1,8 @@
-08/14/2026 Version 4.6.2-beta1
-    - fragroute: fix an Unexpected-exit in pktq_shuffle() when the order module runs
-      against an empty packet queue (e.g. a drop rule ahead of it) - the allocation-skip
-      path for an empty queue fell through into the OOM check and called exit(-1),
-      misdiagnosing an empty queue as an allocation failure. Found by fuzz_fragroute
-      (OSS-Fuzz issue 545904182)
-
 08/11/2026 Version 4.6.1
+    - common: fix an Unexpected-exit in get_l2len_protocol() on an unsupported DLT type -
+      errx() exited the process instead of returning -1 (OSS-Fuzz 545718476)
+    - fragroute: fix an Unexpected-exit in pktq_shuffle() on an empty packet queue -
+      an empty queue was misdiagnosed as an allocation failure (OSS-Fuzz 545904182)
     - common: fix two undefined-behaviour defects found by UBSan - misaligned MPLS label
       parsing, negative left shift in fragroute's ip_ttl (#1100)
     - ci: run UBSan alongside ASan; mark wire-format header structs packed to fix
