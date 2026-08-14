@@ -1,4 +1,6 @@
 08/11/2026 Version 4.6.1
+    - fragroute: fix a null-deref in delay_apply() on an empty packet queue
+      (OSS-Fuzz 545965632)
     - fragroute: fix a null-deref in raw_ip_opt_parse() when a "tcp_opt raw" rule
       supplies too few tokens (OSS-Fuzz 545904184)
     - fragroute: fix pointer corruption in ip_chaff_apply() on a failed option insert -

@@ -80,6 +80,9 @@ delay_apply(void *d, struct pktq *pktq)
     else
         pkt = pktq_random(data->rnd, pktq);
 
+    if (pkt == NULL)
+        return (0);
+
     memcpy(&pkt->pkt_ts, &data->tv, sizeof(pkt->pkt_ts));
 
     return (0);
