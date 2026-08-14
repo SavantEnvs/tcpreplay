@@ -364,7 +364,7 @@ dlt_radiotap_get_80211(tcpeditdlt_t *ctx, const u_char *packet, int pktlen, int 
         return NULL;
 
     extra = (radiotap_extra_t *)(ctx->decoded_extra);
-    if (pktlen >= radiolen && (size_t)(pktlen - radiolen) >= sizeof(extra->packet) &&
+    if (pktlen >= radiolen && (size_t)(pktlen - radiolen) <= sizeof(extra->packet) &&
         lastpacket != ctx->tcpedit->runtime.packetnum) {
         memcpy(extra->packet, &packet[radiolen], pktlen - radiolen);
         lastpacket = ctx->tcpedit->runtime.packetnum;
