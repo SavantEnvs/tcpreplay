@@ -1,4 +1,7 @@
 08/11/2026 Version 4.6.1
+    - fragroute: fix a heap-buffer-overflow in ip_chaff_apply()'s option insertion -
+      a 2-byte buffer-capacity miscalculation let libdnet write past the allocation
+      (OSS-Fuzz 545965630)
     - common: fix an Unexpected-exit in get_l2len_protocol() on an unsupported DLT type -
       errx() exited the process instead of returning -1 (OSS-Fuzz 545718476)
     - fragroute: fix an Unexpected-exit in pktq_shuffle() on an empty packet queue -
