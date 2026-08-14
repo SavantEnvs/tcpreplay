@@ -1,4 +1,7 @@
 08/11/2026 Version 4.6.1
+    - common: reject cache files whose packets_per_byte doesn't match the hardcoded
+      indexing stride, an OOB read via tcpprep/tcpreplay/tcprewrite --cachefile
+      (GHSA-p3f2-88rg-9mch)
     - fragroute: bound mod_apply() against exponential packet-count growth from
       duplicating rules like "ip_chaff"/"tcp_chaff" (OSS-Fuzz 546146015)
     - fragroute: fix a rand_t leak in ip_frag_open()/tcp_seg_open() when a rules
