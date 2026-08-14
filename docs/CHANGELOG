@@ -1,4 +1,7 @@
 08/11/2026 Version 4.6.1
+    - tcpliveplay: fix three heap OOB reads on a crafted pcap - an unclamped memcpy
+      length, missing minimum-caplen checks, and unbounded recovery-scan loops
+      (GHSA-4hqm-8v2c-9pwj)
     - common: reject cache files whose packets_per_byte doesn't match the hardcoded
       indexing stride, an OOB read via tcpprep/tcpreplay/tcprewrite --cachefile
       (GHSA-p3f2-88rg-9mch)
