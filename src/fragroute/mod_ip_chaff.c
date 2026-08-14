@@ -104,11 +104,13 @@ ip_chaff_apply(void *d, struct pktq *pktq)
                                   IP_PROTO_IP,
                                   &opt,
                                   opt.opt_len);
-                /* XXX - whack opt with random crap */
-                *(uint32_t *)new->pkt_ip_data = rand_uint32(data->rnd);
-                new->pkt_ip_data += i;
-                new->pkt_end += i;
-                ip_checksum(new->pkt_ip, new->pkt_ip_data - new->pkt_eth_data);
+                if (i > 0) {
+                    /* XXX - whack opt with random crap */
+                    *(uint32_t *)new->pkt_ip_data = rand_uint32(data->rnd);
+                    new->pkt_ip_data += i;
+                    new->pkt_end += i;
+                    ip_checksum(new->pkt_ip, new->pkt_ip_data - new->pkt_eth_data);
+                }
             } else if (eth_type == ETH_TYPE_IPV6) {
                 continue;
             }
