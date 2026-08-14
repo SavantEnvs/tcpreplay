@@ -461,10 +461,10 @@ get_l2len_protocol(const u_char *pktdata,
         *protocol = ntohs(sll2_hdr->sll2_protocol);
         break;
     default:
-        errx(-1,
-             "Unable to process unsupported DLT type: %s (0x%x)",
-             pcap_datalink_val_to_description(datalink),
-             datalink);
+        warnx("Unable to process unsupported DLT type: %s (0x%x)",
+              pcap_datalink_val_to_description(datalink),
+              datalink);
+        return -1;
     }
 
     return 0;
