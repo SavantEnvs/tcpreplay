@@ -317,7 +317,9 @@ pktq_shuffle(rand_t *r, struct pktq *pktq)
     {
         i++;
     }
-    if (i > 0 && i > pvlen) {
+    if (i == 0)
+        return;
+    if (i > pvlen) {
         pvlen = i;
         if (pvbase == NULL)
             pvbase = malloc(sizeof(pkt) * pvlen);
