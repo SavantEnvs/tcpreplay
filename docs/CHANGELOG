@@ -1,4 +1,6 @@
 08/11/2026 Version 4.6.1
+    - fragroute: fix a rand_t leak in ip_frag_open()/tcp_seg_open() when a rules
+      file repeats "ip_frag" or "tcp_seg" (OSS-Fuzz 545925322)
     - fragroute: wire up mod_close(), which was implemented but never called -
       fragroute_close() leaked the whole parsed rule chain on every call
       (OSS-Fuzz 545818605)
