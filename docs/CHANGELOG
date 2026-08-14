@@ -1,4 +1,7 @@
 08/11/2026 Version 4.6.1
+    - fragroute: fix pointer corruption in ip_chaff_apply() on a failed option insert -
+      an unchecked -1 return shifted pkt_ip_data out of bounds, causing an OOB read
+      downstream in ip_checksum() (OSS-Fuzz 545925319)
     - fragroute: fix a heap-buffer-overflow in ip_chaff_apply()'s option insertion -
       a 2-byte buffer-capacity miscalculation let libdnet write past the allocation
       (OSS-Fuzz 545965630)
