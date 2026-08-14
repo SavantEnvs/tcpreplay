@@ -37,6 +37,7 @@ void
 fragroute_close(fragroute_t *ctx)
 {
     assert(ctx);
+    mod_close();
     free(ctx->pktq);
     free(ctx);
     pkt_close();
