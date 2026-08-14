@@ -1,4 +1,6 @@
 08/11/2026 Version 4.6.1
+    - fragroute: fix a null-deref in raw_ip_opt_parse() when a "tcp_opt raw" rule
+      supplies too few tokens (OSS-Fuzz 545904184)
     - fragroute: fix pointer corruption in ip_chaff_apply() on a failed option insert -
       an unchecked -1 return shifted pkt_ip_data out of bounds, causing an OOB read
       downstream in ip_checksum() (OSS-Fuzz 545925319)
