@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage question (mailing list)
+    url: https://sourceforge.net/p/tcpreplay/mailman/tcpreplay-users/
+    about: Ask how to use Tcpreplay on the tcpreplay-users mailing list.
+  - name: Usage question (Stack Overflow)
+    url: https://stackoverflow.com/questions/tagged/tcpreplay
+    about: Search or ask questions tagged [tcpreplay].
+  - name: Documentation
+    url: https://tcpreplay.appneta.com/
+    about: Installation, quickstart, and per-tool reference.
+  - name: Report a security vulnerability
+    url: https://github.com/appneta/tcpreplay/security/policy
+    about: Do not open a public issue for a vulnerability — report it privately.

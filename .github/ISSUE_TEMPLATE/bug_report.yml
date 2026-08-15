@@ -1,0 +1,101 @@
+name: Bug report
+description: Something in tcpreplay/tcprewrite/tcpprep/tcpbridge/tcpliveplay/tcpcapinfo is broken.
+title: "[Bug] "
+labels: ["Bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. A bug report without a
+        way to reproduce it usually can't be acted on — the more of this form
+        you fill in, the faster it gets looked at.
+
+        Questions about how to use Tcpreplay belong on the
+        [mailing list](https://sourceforge.net/p/tcpreplay/mailman/tcpreplay-users/)
+        or [Stack Overflow](https://stackoverflow.com/questions/tagged/tcpreplay),
+        not here. Suspected security vulnerabilities go through the
+        [security policy](https://github.com/appneta/tcpreplay/security/policy),
+        not a public issue.
+
+  - type: input
+    id: version
+    attributes:
+      label: Tcpreplay version
+      description: Output of `tcpreplay --version` (or the tool you're using).
+      placeholder: "e.g. tcpreplay version: 4.6.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - FreeBSD/OpenBSD/NetBSD
+        - Solaris/illumos
+        - Windows (Cygwin)
+        - Haiku
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version / distro
+      placeholder: "e.g. Ubuntu 24.04, kernel 6.8"
+    validations:
+      required: false
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command line
+      description: The full command you ran, including all flags.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead. Paste the full error/output, not a paraphrase.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce it
+      description: >
+        Steps from a clean checkout/install. If the pcap that triggers it
+        can't be shared, describe how to construct one (link, generator
+        script, or a minimal capture attached to this issue) — a report we
+        can't reproduce usually can't be fixed.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and didn't find this already reported.
+          required: true
+        - label: I reproduced this on the [latest release](https://github.com/appneta/tcpreplay/releases/latest) (or `master`, if intentionally testing an unreleased fix).
+          required: true
