@@ -308,7 +308,13 @@ License
 =======
 Tcpreplay is licensed under [GPLv3], and includes software developed by the
 University of California, Berkeley, Lawrence Berkeley Laboratory and its
-contributors. See [`docs/LICENSE`](docs/LICENSE) for the full text.
+contributors. See [`LICENSE`](LICENSE) for the full text.
+
+This covers the files written for the project; some files distributed with
+the Tcpreplay Suite are copyrighted by other authors and carry a different
+license, and are marked as such in-file. Questions about the licensing that
+applies to a specific file or module can go to the
+[tcpreplay-users mailing list](https://sourceforge.net/p/tcpreplay/mailman/tcpreplay-users/).
 
 Authors
 =======

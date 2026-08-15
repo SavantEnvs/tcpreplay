@@ -36,7 +36,7 @@ postweb: manpages
 	scp CHANGELOG TODO aturner@malbec.synfin.net:/var/vhosts/tcpreplay/
 
 
-EXTRA_DIST = CHANGELOG CREDIT HACKING INSTALL LICENSE Win32Readme.txt
+EXTRA_DIST = CHANGELOG CREDIT HACKING INSTALL Win32Readme.txt
 
 clean-docs: clean
 	-rm -f web/*.html

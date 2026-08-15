@@ -63,7 +63,7 @@ DISTCLEANFILES = .tm_project.cache stamp-h1 *.tar.*
 
 MAINTAINERCLEANFILES = Makefile.in configure *.bak
 
-EXTRA_DIST = doxygen.cfg.in \
+EXTRA_DIST = doxygen.cfg.in LICENSE \
 	m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 \
 	m4/ltversion.m4 m4/lt~obsolete.m4 acinclude.m4 \
 	CMakeLists.txt CMakePresets.json \
