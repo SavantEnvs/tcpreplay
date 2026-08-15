@@ -1,18 +1,26 @@
-## Standards checklist:
+## Summary
 
-<!-- Fill with an x the ones that apply. Example: [x] -->
+<!-- What does this change do, and why? -->
 
-- [ ] The PR title is descriptive.
+## Related issue
+
+<!-- Fixes #, or N/A -->
+
+## Standards checklist
+
+<!-- Fill with an x the ones that apply: [x] -->
+
+- [ ] The PR title is descriptive and the PR does one thing (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
 - [ ] The PR doesn't replicate another PR which is already open.
-- [ ] The code is mine or it's from somewhere with an MIT-compatible license.
-- [ ] The code is efficient, to the best of my ability, and does not waste computer resources.
-- [ ] The code is stable and I have tested it myself, to the best of my abilities.
-- [ ] The code passes `sudo make test`
+- [ ] I followed the coding standards in `docs/HACKING` and ran `clang-format` on changed files.
+- [ ] The code is mine, or from somewhere GPLv3-compatible, with attribution.
+- [ ] I built and tested this locally.
 
-## Changes:
+## What I tested
 
-- [...]
+<!--
+`sudo make test` output, or — if you can't run it (needs root + a live
+NIC) — the manual steps you took and what you observed instead.
+-->
 
-## Other comments:
-
-...
+## Other comments
