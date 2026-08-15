@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest an idea, new flag, or capability for the suite.
+title: "[Feature] "
+labels: ["Enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Questions about how to use an existing feature belong on the
+        [mailing list](https://sourceforge.net/p/tcpreplay/mailman/tcpreplay-users/)
+        or [Stack Overflow](https://stackoverflow.com/questions/tagged/tcpreplay),
+        not here.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to do that you currently can't, and with which tool?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: The flag, behavior, or API you'd want. A rough CLI sketch is fine.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing flags/workarounds you tried, and why they fall short.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and PRs and didn't find this already requested.
+          required: true
