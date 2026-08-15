@@ -1,4 +1,4 @@
-08/11/2026 Version 4.6.1
+08/15/2026 Version 4.6.1
     - tcpedit: fix an inverted bounds check in dlt_radiotap_get_80211() that made
       an oversized memcpy() run exactly when it was guaranteed to overflow
       (GHSA-pmmx-m8p5-969j)

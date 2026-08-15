@@ -214,3 +214,11 @@ jiezhuzzz <GitHub @jiezhuzzz>
 Gabriel Ganne <GitHub @GabrielGanne>
     - minor compilation fixes and warning cleanups found while building with meson
       warning_level=3 (#1116)
+
+tao pan <GitHub @pant0m>
+    - tcpedit: reported an inverted bounds check in dlt_radiotap_get_80211() causing
+      a heap buffer overflow write (GHSA-pmmx-m8p5-969j)
+    - tcpliveplay: reported three heap out-of-bounds reads on a crafted pcap
+      (GHSA-4hqm-8v2c-9pwj)
+    - common: reported a heap out-of-bounds read in cache file parsing from a
+      packets_per_byte/indexing stride mismatch (GHSA-p3f2-88rg-9mch)
