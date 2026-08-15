@@ -93,7 +93,8 @@ txring_send(void *arg)
  * wire out of order.
  *
  * Returns the queued length, or -1 with errno set to ENOBUFS if the ring stayed
- * full - the caller (sendpacket()) counts that and retries.
+ * full, or EMSGSIZE if the packet doesn't fit this MTU's frame size - the
+ * caller (sendpacket()) counts either as a failure.
  */
 int
 txring_put(txring_t *txp, const void *data, size_t length)
@@ -103,6 +104,28 @@ txring_put(txring_t *txp, const void *data, size_t length)
     struct tpacket_hdr *ps_header;
     char *to_data;
     unsigned int spins;
+
+    if (length > max_len) {
+        /*
+         * Refuse rather than truncate-and-send-anyway (#1108). This used to
+         * copy in only the first max_len bytes and queue that as the whole
+         * packet - the kernel doesn't know or care that it's short, so the
+         * corrupted frame reached the wire, while the caller's own
+         * accounting (send_packets.c) counted it a failure on the strength
+         * of this function's truncated return value. "0 successful, N
+         * failed" was true of the bookkeeping, not of what the interface
+         * actually transmitted. Checked before touching the ring at all, so
+         * a packet that can never fit doesn't cost it a slot.
+         *
+         * TODO: fragment instead of refusing outright, once something
+         * upstream can reassemble it.
+         */
+        warnx("[!] %zu byte packet exceeds the %zu-byte frame this MTU allows - refusing to send it",
+              length,
+              max_len);
+        errno = EMSGSIZE;
+        return -1;
+    }
 
     ps_header = ((struct tpacket_hdr *)((void *)txp->tx_head + (txp->treq->tp_frame_size * txp->tx_index)));
     to_data = ((void *)ps_header) + tdata_offset;
@@ -127,12 +150,6 @@ txring_put(txring_t *txp, const void *data, size_t length)
 
         /* nothing to do => schedule : useful if no SMP */
         usleep(0);
-    }
-
-    if (length > max_len) {
-        /* TODO Fragment packet */
-        warnx("[!] %zu bytes from %zu byte packet truncated", length - max_len, length);
-        length = max_len;
     }
 
     memcpy(to_data, data, length);
@@ -272,13 +289,62 @@ txring_mkreq(struct tpacket_req *treq, unsigned int mtu)
         treq->tp_block_nr = nr_blocks;
         treq->tp_frame_nr = nr_blocks;
     } else {
+        /*
+         * Several frames fit in a page.  The frame size has to be a multiple
+         * of TPACKET_ALIGNMENT - the kernel rejects the ring outright
+         * otherwise:
+         *
+         *     if (unlikely(req->tp_frame_size & (TPACKET_ALIGNMENT - 1)))
+         *             goto out;              -- net/packet/af_packet.c
+         *
+         * This used to pack as many frames into the page as would fit and
+         * then divide, which lands on an aligned size only by luck: a
+         * 1280-byte MTU (the IPv6 minimum) gave 4096/3 = 1365, and
+         * setsockopt(PACKET_TX_RING) failed with EINVAL, so TX_RING was
+         * unusable on any small-MTU interface (#1090).
+         *
+         * Round the requirement up to the alignment first, then fit as many
+         * of those as the page holds. Rounding the division's result *down*
+         * instead would be wrong - it can fall back under the MTU (a 61-byte
+         * MTU wants 113 bytes and would get 112).
+         */
+        /*
+         * Pack as many frames into the page as will fit, then round the frame
+         * size *down* to TPACKET_ALIGNMENT - the kernel rejects an unaligned
+         * frame size outright:
+         *
+         *     if (unlikely(req->tp_frame_size & (TPACKET_ALIGNMENT - 1)))
+         *             goto out;              -- net/packet/af_packet.c
+         *
+         * A 1280-byte MTU (the IPv6 minimum) used to give 4096/3 = 1365 and
+         * setsockopt(PACKET_TX_RING) failed with EINVAL, so TX_RING could not
+         * be used on a small-MTU interface at all (#1090).
+         *
+         * Round down, not up. Sizing the frame to exactly TPACKET_ALIGN(s)
+         * looks tighter and is wrong: the kernel needs headroom beyond
+         * mtu + TPACKET_HDRLEN for the link-layer reserve, and a frame that
+         * merely satisfies that arithmetic silently fails to send - a 1500-MTU
+         * interface delivered 2 packets out of 179 (#1094). Keeping the
+         * original generous packing avoids that, so MTUs that already worked
+         * keep exactly the geometry they had.
+         *
+         * Rounding down can drop below s on very small MTUs (61 bytes needs
+         * 113 and would get 112), so give back a frame when it does.
+         */
         while ((s * (mult + 1)) <= pg) {
             mult++;
         }
+
+        treq->tp_frame_size = (pg / mult) & ~(TPACKET_ALIGNMENT - 1);
+        while (treq->tp_frame_size < s && mult > 1) {
+            mult--;
+            treq->tp_frame_size = (pg / mult) & ~(TPACKET_ALIGNMENT - 1);
+        }
+
         treq->tp_block_size = pg;
-        treq->tp_frame_size = pg / mult;
         treq->tp_block_nr = nr_blocks;
-        treq->tp_frame_nr = mult * nr_blocks;
+        /* must equal the kernel's own frames_per_block * tp_block_nr */
+        treq->tp_frame_nr = (pg / treq->tp_frame_size) * nr_blocks;
     }
     dbgx(1,
          "txring: block_size=%d block_nr=%d frame_size=%d frame_nr=%d",

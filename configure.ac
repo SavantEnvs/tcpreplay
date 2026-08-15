@@ -4,7 +4,7 @@ dnl $Id$
 AC_PREREQ([2.69])
 
 dnl Set version info here!
-AC_INIT([tcpreplay],[4.6.0],[https://github.com/appneta/tcpreplay/issues],[tcpreplay],[http://tcpreplay.sourceforge.net/])
+AC_INIT([tcpreplay],[4.6.1],[https://github.com/appneta/tcpreplay/issues],[tcpreplay],[http://tcpreplay.sourceforge.net/])
 AC_CONFIG_SRCDIR([src/tcpreplay.c])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -510,7 +510,7 @@ AC_SUBST(extra_debug_flag)
 dnl Enable timestamp_trace in code/compiler options
 timestamp_trace=no
 AC_ARG_ENABLE(timestamp-trace,
-    AS_HELP_STRING([--timestamp-trace],[Enable dumping of trace timestamps at the end of a test]),
+    AS_HELP_STRING([--enable-timestamp-trace],[Enable dumping of trace timestamps at the end of a test]),
     [ if test x$enableval = xyes; then
         timestamp_trace=yes
         CFLAGS="${CFLAGS} -DTIMESTAMP_TRACE"
@@ -611,6 +611,13 @@ AC_ARG_ENABLE(force-pf,
 AC_ARG_ENABLE(force-libdnet,
     AS_HELP_STRING([--enable-force-libdnet],[Force using libdnet for sending packets]),
     [ AC_DEFINE([FORCE_INJECT_LIBDNET], [1], [Force using libdnet for sending packets])])
+
+dnl fuzz targets (#1092). Off by default: the harnesses build and run their
+dnl corpus with any compiler, but actual fuzzing needs clang's libFuzzer.
+AC_ARG_ENABLE(fuzzer,
+    AS_HELP_STRING([--enable-fuzzer],[Build the fuzz targets against libFuzzer (requires clang)]),
+    [enable_fuzzer=$enableval], [enable_fuzzer=no])
+AM_CONDITIONAL(ENABLE_FUZZER, test x$enable_fuzzer = xyes)
 
 AC_ARG_ENABLE(force-libxdp,
     AS_HELP_STRING([--enable-force-libxdp],[Force using libxdp for sending packets]),
@@ -1846,6 +1853,48 @@ dnl restore LIBS & CFLAGS
 LIBS="$OLDLIBS"
 CFLAGS="$OLDCFLAGS"
 
+dnl TX_RING's poll thread (src/common/txring.c) calls pthread_create()/
+dnl pthread_join() unconditionally - this is not the optional PF_RING path
+dnl checked above (which links its own -lpthread only when PF_RING itself is
+dnl in use), it's the plain Linux injection method every build uses by
+dnl default. Since glibc 2.34, pthread symbols live in libc itself, so this
+dnl link succeeds there with no extra flag and the gap went unnoticed; older
+dnl toolchains (RHEL 8/9's glibc predates or straddles that merge) need
+dnl -pthread explicitly, or linking tcpreplay/tcpbridge/etc. fails with
+dnl undefined references to pthread_create (#1089).
+dnl
+dnl This has to run after the LIBS/CFLAGS restore above, not before: that
+dnl restore is the end of a long pcap-detection scratch zone that freely
+dnl mutates both variables and then unconditionally discards the result, and
+dnl TX_RING's own probe (just before this point) happens to sit inside it.
+dnl A PTHREAD_CFLAGS substitution, rather than appending to the shared
+dnl CFLAGS/LIBS directly, sidesteps that fragility entirely - Makefile.am
+dnl adds it explicitly wherever txring.o is linked.
+PTHREAD_CFLAGS=
+if test "$have_tx_ring" = yes; then
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS -pthread"
+    AC_MSG_CHECKING([whether -pthread links TX_RING's poll thread])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <pthread.h>]], [[
+        pthread_t t;
+        pthread_create(&t, NULL, 0, NULL);
+    ]])],[
+        dnl -pthread over plain -lpthread: as a compiler driver flag it also
+        dnl sets any preprocessor defines the platform's headers need for
+        dnl thread-safety, and covers both the compile and link steps with
+        dnl one substitution.
+        AC_MSG_RESULT(yes)
+        CFLAGS="$save_CFLAGS"
+        PTHREAD_CFLAGS="-pthread"
+    ],[
+        CFLAGS="$save_CFLAGS"
+        AC_MSG_RESULT([no])
+        AC_CHECK_LIB([pthread], [pthread_create],
+            [PTHREAD_CFLAGS="-lpthread"],
+            [AC_MSG_ERROR([TX_RING requires pthread_create(), and it was not found even with -lpthread])])
+    ])
+fi
+AC_SUBST(PTHREAD_CFLAGS)
 
 dnl ##################################################
 dnl # Check for pcapnav
@@ -2189,6 +2238,8 @@ AC_CONFIG_FILES([Makefile
            src/defines.h
            examples/Makefile
            test/Makefile
+           test/unit/Makefile
+           test/fuzz/Makefile
            test/config
            scripts/Makefile])
 

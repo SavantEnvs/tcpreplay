@@ -47,6 +47,8 @@ tcp_seg_open(int argc, char *argv[])
         warn("need segment <size> in bytes");
         return (NULL);
     }
+    if (tcp_seg_data.rnd != NULL)
+        rand_close(tcp_seg_data.rnd);
     tcp_seg_data.rnd = rand_open();
 
     /*

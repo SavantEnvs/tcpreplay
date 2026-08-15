@@ -85,9 +85,9 @@ void
 inet_checksum(uint16_t eth_type, void *buf, size_t len)
 {
     if (eth_type == ETH_TYPE_IP) {
-        return ip_checksum(buf, len);
+        ip_checksum(buf, len);
     } else if (eth_type == ETH_TYPE_IPV6) {
-        return ip6_checksum(buf, len);
+        ip6_checksum(buf, len);
     }
 }
 
@@ -96,6 +96,10 @@ raw_ip_opt_parse(int argc, char *argv[], uint8_t *opt_type, uint8_t *opt_len, ui
 {
     int i, j;
 
+    if (argc < 2) {
+        warn("raw option needs at least a type and a length");
+        return -1;
+    }
     if (sscanf(argv[0], "%hhx", opt_type) != 1) {
         warn("invalid opt_type");
         return -1;

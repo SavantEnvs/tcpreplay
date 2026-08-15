@@ -26,7 +26,14 @@
 #include "checksum.h"
 #include "config.h"
 
-static int do_checksum_math(uint16_t *, int);
+/*
+ * aligned(1): callers pass &pkt_hdr->field addresses from packed wire structs
+ * (#1104) - relaxing this type's alignment carries that through the pointer
+ * parameter instead of losing it at the call boundary (#1122).
+ */
+typedef uint16_t unaligned_uint16_t __attribute__((aligned(1)));
+
+static int do_checksum_math(unaligned_uint16_t *, int);
 
 /**
  * Returns -1 on error and 0 on success, 1 on warn
@@ -95,13 +102,13 @@ do_checksum(tcpedit_t *tcpedit, uint8_t *data, int proto, int len, const u_char 
          * length is 2x a single IP
          */
         if (ipv6 != NULL) {
-            sum = do_checksum_math((uint16_t *)&ipv6->ip_src, 32);
+            sum = do_checksum_math((unaligned_uint16_t *)&ipv6->ip_src, 32);
         } else {
-            sum = do_checksum_math((uint16_t *)&ipv4->ip_src, 8);
+            sum = do_checksum_math((unaligned_uint16_t *)&ipv4->ip_src, 8);
         }
 
         sum += ntohs(IPPROTO_TCP + len);
-        sum += do_checksum_math((uint16_t *)tcp, len);
+        sum += do_checksum_math((unaligned_uint16_t *)tcp, len);
         tcp->th_sum = CHECKSUM_CARRY(sum);
         break;
 
@@ -116,12 +123,12 @@ do_checksum(tcpedit_t *tcpedit, uint8_t *data, int proto, int len, const u_char 
             break;
         udp->uh_sum = 0;
         if (ipv6 != NULL) {
-            sum = do_checksum_math((uint16_t *)&ipv6->ip_src, 32);
+            sum = do_checksum_math((unaligned_uint16_t *)&ipv6->ip_src, 32);
         } else {
-            sum = do_checksum_math((uint16_t *)&ipv4->ip_src, 8);
+            sum = do_checksum_math((unaligned_uint16_t *)&ipv4->ip_src, 8);
         }
         sum += ntohs(IPPROTO_UDP + len);
-        sum += do_checksum_math((uint16_t *)udp, len);
+        sum += do_checksum_math((unaligned_uint16_t *)udp, len);
         udp->uh_sum = CHECKSUM_CARRY(sum);
         break;
 
@@ -133,10 +140,10 @@ do_checksum(tcpedit_t *tcpedit, uint8_t *data, int proto, int len, const u_char 
         icmp = (icmpv4_hdr_t *)(data + ip_hl);
         icmp->icmp_sum = 0;
         if (ipv6 != NULL) {
-            sum = do_checksum_math((uint16_t *)&ipv6->ip_src, 32);
+            sum = do_checksum_math((unaligned_uint16_t *)&ipv6->ip_src, 32);
             icmp->icmp_sum = CHECKSUM_CARRY(sum);
         }
-        sum += do_checksum_math((uint16_t *)icmp, len);
+        sum += do_checksum_math((unaligned_uint16_t *)icmp, len);
         icmp->icmp_sum = CHECKSUM_CARRY(sum);
         break;
 
@@ -148,17 +155,17 @@ do_checksum(tcpedit_t *tcpedit, uint8_t *data, int proto, int len, const u_char 
         icmp6 = (icmpv6_hdr_t *)(data + ip_hl);
         icmp6->icmp_sum = 0;
         if (ipv6 != NULL) {
-            sum = do_checksum_math((u_int16_t *)&ipv6->ip_src, 32);
+            sum = do_checksum_math((unaligned_uint16_t *)&ipv6->ip_src, 32);
         }
         sum += ntohs(IPPROTO_ICMP6 + len);
-        sum += do_checksum_math((u_int16_t *)icmp6, len);
+        sum += do_checksum_math((unaligned_uint16_t *)icmp6, len);
         icmp6->icmp_sum = CHECKSUM_CARRY(sum);
         break;
 
     default:
         if (ipv4) {
             ipv4->ip_sum = 0;
-            sum = do_checksum_math((uint16_t *)data, ip_hl);
+            sum = do_checksum_math((unaligned_uint16_t *)data, ip_hl);
             ipv4->ip_sum = CHECKSUM_CARRY(sum);
         } else {
             tcpedit_setwarn(tcpedit, "Unsupported protocol for checksum: 0x%x", proto);
@@ -173,7 +180,7 @@ do_checksum(tcpedit_t *tcpedit, uint8_t *data, int proto, int len, const u_char 
  * code to do a ones-compliment checksum
  */
 static int
-do_checksum_math(uint16_t *data, int len)
+do_checksum_math(unaligned_uint16_t *data, int len)
 {
     int sum = 0;
     union {

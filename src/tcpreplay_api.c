@@ -112,8 +112,20 @@ tcpreplay_init()
     ctx->options->tcpdump = (tcpdump_t *)safe_malloc(sizeof(tcpdump_t));
 #endif
 
-    if (fcntl(STDERR_FILENO, F_SETFL, O_NONBLOCK) < 0)
-        tcpreplay_setwarn(ctx, "Unable to set STDERR to non-blocking: %s", strerror(errno));
+    /*
+     * F_SETFL replaces the whole flags word, not just the bit being added -
+     * fetch the existing flags first. Passing O_NONBLOCK alone silently
+     * cleared O_APPEND whenever stderr shared an open file description with a
+     * redirected stdout (the "cmd >> log 2>&1" shell idiom): every write
+     * after that point used the fd's stored offset (0, for a freshly opened
+     * fd not yet written through) instead of appending, overwriting whatever
+     * was already in the log file from its start.
+     */
+    {
+        int stderr_flags = fcntl(STDERR_FILENO, F_GETFL, 0);
+        if (stderr_flags < 0 || fcntl(STDERR_FILENO, F_SETFL, stderr_flags | O_NONBLOCK) < 0)
+            tcpreplay_setwarn(ctx, "Unable to set STDERR to non-blocking: %s", strerror(errno));
+    }
 
 #ifdef ENABLE_PCAP_FINDALLDEVS
     ctx->intlist = get_interface_list();
@@ -434,16 +446,13 @@ tcpreplay_post_args(tcpreplay_t *ctx, int argc)
          * blocked on every batch completing before preparing the next packet
          * (#1084). Since sends were pipelined across the whole umem, a batch
          * of 1 reaches line rate on its own - 941 Mbps / 305k pps on a 1GigE
-         * e1000, ahead of the default injector - so 1 is the default at every
-         * speed, paced or not.
-         *
-         * The knob stays for links this can't yet saturate: 100GigE and up,
-         * especially with small (e.g. 64-byte) packets, may still benefit
-         * from a deeper batch to amortize whatever per-packet cost remains.
-         * Untested above 1GigE - if you have the hardware, --xdp-batch-size
-         * is there to try.
+         * e1000, ahead of the default injector - so 1 is used at every speed,
+         * paced or not. This used to be tunable via --xdp-batch-size for
+         * links that might still benefit from a deeper batch (100GigE and up
+         * with small packets), but measurement on 100GigE found no benefit
+         * from raising it, so the option was removed (#1128).
          */
-        ctx->intf1->batch_size = HAVE_OPT(XDP_BATCH_SIZE) ? OPT_VALUE_XDP_BATCH_SIZE : 1;
+        ctx->intf1->batch_size = 1;
 #endif
 #if defined HAVE_NETMAP
         ctx->intf1->netmap_delay = ctx->options->netmap_delay;

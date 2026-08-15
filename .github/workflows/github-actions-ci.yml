@@ -36,6 +36,8 @@ jobs:
         run: ls ${{ github.workspace }}
       - name: List interfaces via tcpreplay
         run: pushd build; sudo src/tcpreplay --listnics; popd
+      - name: unit tests (make check)
+        run: pushd build; make check || (cat test/unit/test-suite.log >&2; false); popd
       - name: tests
         run: pushd build; sudo make test || (cat test/test.log >&2; false); popd
       - name: io_uring variant tests
@@ -69,6 +71,8 @@ jobs:
         run: cmake -B build-cmake -DENABLE_DEBUG=ON
       - name: build
         run: cmake --build build-cmake -j 4
+      - name: unit tests (ctest)
+        run: ctest --test-dir build-cmake --output-on-failure
       - name: smoke test
         run: |
           build-cmake/src/tcpreplay --version
@@ -80,3 +84,66 @@ jobs:
         run: |
           build-cmake/src/tcprewrite -i test/test.pcap -o portmap.pcap -r 80:8080
           cmp portmap.pcap test/test2.rewrite_portmap
+
+  # AddressSanitizer build. --enable-asan has been supported for a long time
+  # but nothing ever ran it, so the checking existed and was never applied
+  # (#1093). Given that 15 memory-safety advisories were published against
+  # this project in 2026 - every one reported from outside - running the
+  # existing corpus under ASan is the cheapest coverage available: no new
+  # tests, no new dependencies.
+  #
+  # Linux only: the integration suite needs a live interface, and a dummy
+  # device gives one without touching the runner's real networking.
+  #
+  # UndefinedBehaviorSanitizer runs alongside, alignment checking included.
+  #
+  # The two defects that first blocked it are fixed (#1100): a misaligned
+  # struct access in the MPLS parser and a left shift of a negative value in
+  # fragroute's ip_ttl. Alignment itself was systemic rather than a defect or
+  # two - parsing a packet here means casting a buffer offset to a header
+  # struct, and an Ethernet payload starts 14 bytes in, so any 4-byte field in
+  # it is misaligned by construction - and had to stay off for a while (15
+  # sites across get.c, flows.c and en10mb.c, #1104) rather than turn the job
+  # red with no coverage of anything else. Fixed by marking the wire-format
+  # header structs those sites cast onto (tcpr_ipv4_hdr, tcpr_ipv6_hdr,
+  # tcpr_in6_addr, tcpr_tcp_hdr, tcpr_icmpv4_hdr, in tcpr.h) __attribute__
+  # ((packed)): none of them had compiler-inserted padding to begin with, so
+  # this is a no-op for sizeof()/wire layout, and only tells the compiler the
+  # struct's start address isn't guaranteed aligned - which it never was.
+  #
+  # Leak detection is off for the same reason: the tools exit without freeing
+  # everything, and that is a separate cleanup from memory-corruption
+  # coverage, which is the class the advisories actually fall into.
+  asan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install prereqs
+        run: sudo apt -y install autogen asciidoctor libpcap-dev automake autoconf libtool libxdp-dev liburing-dev
+      - name: Create a dummy interface for the replay tests
+        run: |
+          sudo ip link add dummy0 type dummy
+          sudo ip link set dummy0 up
+      - name: Create a build directory
+        run: mkdir -p build-asan
+      - name: Create configure script
+        run: pushd build-asan; ../autogen.sh; popd
+      - name: configure
+        run: |
+          pushd build-asan
+          ../configure --enable-asan --with-testnic=dummy0 --with-testnic2=dummy0 \
+            CFLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined -g -O1"
+          popd
+      - name: make
+        run: pushd build-asan; make -j 4; popd
+      - name: unit tests under ASan + UBSan
+        env:
+          ASAN_OPTIONS: detect_leaks=0:abort_on_error=1
+        run: pushd build-asan; make check || (cat test/unit/test-suite.log >&2; false); popd
+      - name: integration suite under ASan + UBSan
+        run: |
+          pushd build-asan
+          sudo ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 make test \
+            || (cat test/test.log >&2; false)
+          popd

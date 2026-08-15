@@ -99,12 +99,18 @@ ip_chaff_apply(void *d, struct pktq *pktq)
             if (eth_type == ETH_TYPE_IP) {
                 opt.opt_type = 0x42;
                 opt.opt_len = IP_OPT_LEN;
-                i = ip_add_option(new->pkt_ip, new->pkt_buf_size - ETH_HDR_LEN, IP_PROTO_IP, &opt, opt.opt_len);
-                /* XXX - whack opt with random crap */
-                *(uint32_t *)new->pkt_ip_data = rand_uint32(data->rnd);
-                new->pkt_ip_data += i;
-                new->pkt_end += i;
-                ip_checksum(new->pkt_ip, new->pkt_ip_data - new->pkt_eth_data);
+                i = ip_add_option(new->pkt_ip,
+                                  new->pkt_buf + new->pkt_buf_size - (u_char *)new->pkt_ip,
+                                  IP_PROTO_IP,
+                                  &opt,
+                                  opt.opt_len);
+                if (i > 0) {
+                    /* XXX - whack opt with random crap */
+                    *(uint32_t *)new->pkt_ip_data = rand_uint32(data->rnd);
+                    new->pkt_ip_data += i;
+                    new->pkt_end += i;
+                    ip_checksum(new->pkt_ip, new->pkt_ip_data - new->pkt_eth_data);
+                }
             } else if (eth_type == ETH_TYPE_IPV6) {
                 continue;
             }
