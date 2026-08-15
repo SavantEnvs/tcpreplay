@@ -20,7 +20,7 @@ In the near future expect native support for Windows (volunteers please). For mo
 please read the Win32Readme.txt file.
 
 ## How is Tcpreplay licensed?
-Tcpreplay is licensed under [GPLv3][gplv3]. For details see the docs/LICENSE file included 
+Tcpreplay is licensed under [GPLv3][gplv3]. For details see the LICENSE file included 
 with the source code.
 
 ## Running Tcpreplay
