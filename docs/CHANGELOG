@@ -1,4 +1,34 @@
 08/11/2026 Version 4.6.1
+    - tcpedit: fix an inverted bounds check in dlt_radiotap_get_80211() that made
+      an oversized memcpy() run exactly when it was guaranteed to overflow
+      (GHSA-pmmx-m8p5-969j)
+    - tcpliveplay: fix three heap OOB reads on a crafted pcap - an unclamped memcpy
+      length, missing minimum-caplen checks, and unbounded recovery-scan loops
+      (GHSA-4hqm-8v2c-9pwj)
+    - common: reject cache files whose packets_per_byte doesn't match the hardcoded
+      indexing stride, an OOB read via tcpprep/tcpreplay/tcprewrite --cachefile
+      (GHSA-p3f2-88rg-9mch)
+    - fragroute: bound mod_apply() against exponential packet-count growth from
+      duplicating rules like "ip_chaff"/"tcp_chaff" (OSS-Fuzz 546146015)
+    - fragroute: fix a rand_t leak in ip_frag_open()/tcp_seg_open() when a rules
+      file repeats "ip_frag" or "tcp_seg" (OSS-Fuzz 545925322)
+    - fragroute: wire up mod_close(), which was implemented but never called -
+      fragroute_close() leaked the whole parsed rule chain on every call
+      (OSS-Fuzz 545818605)
+    - fragroute: fix a null-deref in delay_apply() on an empty packet queue
+      (OSS-Fuzz 545965632)
+    - fragroute: fix a null-deref in raw_ip_opt_parse() when a "tcp_opt raw" rule
+      supplies too few tokens (OSS-Fuzz 545904184)
+    - fragroute: fix pointer corruption in ip_chaff_apply() on a failed option insert -
+      an unchecked -1 return shifted pkt_ip_data out of bounds, causing an OOB read
+      downstream in ip_checksum() (OSS-Fuzz 545925319)
+    - fragroute: fix a heap-buffer-overflow in ip_chaff_apply()'s option insertion -
+      a 2-byte buffer-capacity miscalculation let libdnet write past the allocation
+      (OSS-Fuzz 545965630)
+    - common: fix an Unexpected-exit in get_l2len_protocol() on an unsupported DLT type -
+      errx() exited the process instead of returning -1 (OSS-Fuzz 545718476)
+    - fragroute: fix an Unexpected-exit in pktq_shuffle() on an empty packet queue -
+      an empty queue was misdiagnosed as an allocation failure (OSS-Fuzz 545904182)
     - common: fix two undefined-behaviour defects found by UBSan - misaligned MPLS label
       parsing, negative left shift in fragroute's ip_ttl (#1100)
     - ci: run UBSan alongside ASan; mark wire-format header structs packed to fix

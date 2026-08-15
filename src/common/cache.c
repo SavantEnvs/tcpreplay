@@ -109,6 +109,22 @@ read_cache(char **cachedata, const char *cachefile, char **comment)
     /* malloc our cache block */
     header.num_packets = ntohll(header.num_packets);
     header.packets_per_byte = ntohs(header.packets_per_byte);
+
+    /*
+     * The on-disk field is informational only: every reader indexes with the
+     * compile-time CACHE_PACKETS_PER_BYTE, never header.packets_per_byte. A
+     * mismatching value would size this allocation by one stride while
+     * check_cache() and friends walk it with another, reading out of bounds.
+     * Reject anything that doesn't match rather than trust a file-controlled
+     * divisor (which could also be zero).
+     */
+    if (header.packets_per_byte != CACHE_PACKETS_PER_BYTE)
+        errx(-1,
+             "Unable to process %s: unsupported packets_per_byte %u (expected %u)",
+             cachefile,
+             header.packets_per_byte,
+             CACHE_PACKETS_PER_BYTE);
+
     cache_size = header.num_packets / header.packets_per_byte;
 
     /* deal with any remainder, because above division is integer */

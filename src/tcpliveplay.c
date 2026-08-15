@@ -502,10 +502,26 @@ setup_sched(struct tcp_sched *schedule)
         pkt_counter++; /*increment number of packets seen*/
 
         memcpy(&schedule[i].pkthdr, &header, sizeof(struct pcap_pkthdr));
-        schedule[i].packet_ptr = safe_malloc(schedule[i].pkthdr.len);
-        memcpy(schedule[i].packet_ptr, packet, schedule[i].pkthdr.len);
+
+        /*
+         * Copy only what was actually captured. header.len can exceed
+         * header.caplen for a truncated capture; copying len bytes out of a
+         * caplen-sized libpcap read buffer reads past its end. sendpacket()
+         * later transmits packet_ptr for pkthdr.len bytes too, so len must be
+         * clamped to what's actually allocated or that over-read happens
+         * again at send time.
+         */
+        if (schedule[i].pkthdr.len > schedule[i].pkthdr.caplen)
+            schedule[i].pkthdr.len = schedule[i].pkthdr.caplen;
+        schedule[i].packet_ptr = safe_malloc(schedule[i].pkthdr.caplen);
+        memcpy(schedule[i].packet_ptr, packet, schedule[i].pkthdr.caplen);
 
         /* extract necessary data */
+        if (schedule[i].pkthdr.caplen < SIZE_ETHERNET + sizeof(ipv4_hdr) + sizeof(tcp_hdr)) {
+            printf("ERROR: Packet too short to contain Ethernet/IP/TCP headers: %u bytes\n",
+                   schedule[i].pkthdr.caplen);
+            return 0;
+        }
         etherhdr = (ether_hdr *)(schedule[i].packet_ptr);
         iphdr = (ipv4_hdr *)(schedule[i].packet_ptr + SIZE_ETHERNET);
         size_ip = iphdr->ip_hl << 2;
@@ -710,6 +726,10 @@ got_packet(_U_ u_char *args, _U_ const struct pcap_pkthdr *header, const u_char 
     unsigned int flags;
 
     /* Extract and examine received packet headers */
+    if (header->caplen < SIZE_ETHERNET + sizeof(ipv4_hdr) + sizeof(tcp_hdr)) {
+        printf("ERROR: Packet too short to contain Ethernet/IP/TCP headers: %u bytes\n", header->caplen);
+        return;
+    }
     iphdr = (ipv4_hdr *)(packet + SIZE_ETHERNET);
     size_ip = iphdr->ip_hl << 2;
     if (size_ip < 20) {
@@ -757,9 +777,11 @@ got_packet(_U_ u_char *args, _U_ const struct pcap_pkthdr *header, const u_char 
         // printf("Remote Packet Loss! Resending Lost packet\n");
         sched_index = acked_index; /* Reset the schedule index back to the last correctly ACKed packet */
         // printf("ACKED Index = %d\n", acked_index);
-        while (!sched[sched_index].local) {
+        while (sched_index < pkts_scheduled && !sched[sched_index].local) {
             sched_index++;
         }
+        if (sched_index >= pkts_scheduled)
+            printf("ERROR: schedule recovery scan ran past the end of the schedule\n");
         return;
     }
 
@@ -771,9 +793,11 @@ got_packet(_U_ u_char *args, _U_ const struct pcap_pkthdr *header, const u_char 
         sched_index = acked_index; /* Reset the schedule index back to the last correctly ACKed packet */
         /*sched[sched_index].sent_counter=0; Reset the re-transmission counter for this ACKed packet?*/
         // printf("ACKED Index = %d\n", acked_index);
-        while (!sched[sched_index].local) {
+        while (sched_index < pkts_scheduled && !sched[sched_index].local) {
             sched_index++;
         }
+        if (sched_index >= pkts_scheduled)
+            printf("ERROR: schedule recovery scan ran past the end of the schedule\n");
         return;
     }
 
@@ -793,9 +817,11 @@ got_packet(_U_ u_char *args, _U_ const struct pcap_pkthdr *header, const u_char 
             /* packets were received matching expectation*/
             sched_index = acked_index; /* Reset the schedule index back to the last correctly ACKed packet */
             // printf("ACKED Index = %d\n", acked_index);
-            while (!sched[sched_index].local) {
+            while (sched_index < pkts_scheduled && !sched[sched_index].local) {
                 sched_index++;
             }
+            if (sched_index >= pkts_scheduled)
+                printf("ERROR: schedule recovery scan ran past the end of the schedule\n");
             return;
         }
         printf("Remote Packet Expectation met.\nProceeding in replay....\n");
@@ -939,6 +965,10 @@ rewrite(input_addr *new_remoteip,
         if (!warned && header->len > header->caplen) {
             fprintf(stderr, "warning: packet capture truncated to %d byte packets\n", header->caplen);
             warned = true;
+        }
+        if (header->caplen < SIZE_ETHERNET + sizeof(ipv4_hdr) + sizeof(tcp_hdr)) {
+            printf("ERROR: Packet too short to contain Ethernet/IP/TCP headers: %u bytes\n", header->caplen);
+            return ERROR;
         }
         etherhdr = (ether_hdr *)(packet);
         iphdr = (ipv4_hdr *)(packet + SIZE_ETHERNET);
