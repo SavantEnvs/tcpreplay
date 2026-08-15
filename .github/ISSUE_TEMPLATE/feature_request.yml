@@ -1,7 +1,7 @@
 name: Feature request
 description: Suggest an idea, new flag, or capability for the suite.
 title: "[Feature] "
-labels: ["Enhancement"]
+labels: ["enhancement"]
 body:
   - type: markdown
     attributes:

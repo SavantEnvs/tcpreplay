@@ -1,7 +1,7 @@
 name: Bug report
 description: Something in tcpreplay/tcprewrite/tcpprep/tcpbridge/tcpliveplay/tcpcapinfo is broken.
 title: "[Bug] "
-labels: ["Bug"]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
